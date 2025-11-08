@@ -1,0 +1,5 @@
+{
+    "chat.agent.enabled": true,
+    "chat.setup.signInDialogVariant": "default",
+    "github.copilot.advanced": {}
+}

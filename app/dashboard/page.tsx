@@ -1,0 +1,235 @@
+"use client"
+import { TaskCalendar } from "@/components/dashboard/task-calendar"
+import { TaskList } from "@/components/dashboard/task-list"
+import { PomodoroTimer } from "@/components/dashboard/pomodoro-timer"
+import { QuickStats } from "@/components/dashboard/quick-stats"
+import { RecentActivity } from "@/components/dashboard/recent-activity"
+import { MotivationalQuote } from "@/components/dashboard/motivational-quote"
+import { GardenTimeline } from "@/components/dashboard/garden-timeline"
+import { Icons } from "@/components/icons"
+import { useState, useEffect } from "react"
+import { useData } from "@/components/local-data-provider"
+import { Badge } from "@/components/ui/badge"
+
+export default function DashboardPage() {
+  const [currentDate, setCurrentDate] = useState(new Date())
+  const [isQuickActionsOpen, setIsQuickActionsOpen] = useState(false)
+  const { tasks, pomodoros, stats, userName } = useData()
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCurrentDate(new Date())
+    }, 60000)
+
+    return () => clearInterval(timer)
+  }, [])
+
+  // Close quick actions when clicking outside on mobile
+  useEffect(() => {
+    if (!isQuickActionsOpen) return
+
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as HTMLElement
+      if (!target.closest('.quick-actions-menu')) {
+        setIsQuickActionsOpen(false)
+      }
+    }
+
+    document.addEventListener('click', handleClickOutside)
+    return () => document.removeEventListener('click', handleClickOutside)
+  }, [isQuickActionsOpen])
+
+  const todayTasks = tasks.filter((task) => {
+    const today = new Date().toISOString().split("T")[0]
+    return !task.completed && (!task.dueDate || task.dueDate === today)
+  }).length
+
+  const todayPomodoros = pomodoros.filter((p) => {
+    const today = new Date().toISOString().split("T")[0]
+    return p.completed && p.startTime.split("T")[0] === today
+  }).length
+
+  return (
+    <div className="w-full h-full">
+      {/* Welcome Header Section */}
+      <div className="p-4 sm:p-6 pb-3 sm:pb-4 bg-gradient-to-br from-slate-50/80 via-blue-50/60 to-indigo-50/40 dark:from-slate-900 dark:via-slate-800 dark:to-slate-900 border-b border-slate-200/50 dark:border-slate-700/50">
+        <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-3 sm:gap-4">
+          {/* Welcome Section */}
+          <div className="flex-1 w-full">
+            <div className="mb-3 sm:mb-4">
+              <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-gray-900 dark:text-gray-100 flex items-center gap-2">
+                {`Welcome back${userName ? ", " : ""}`}
+                {userName && (
+                  <span className="text-emerald-700 dark:text-emerald-300 font-bold">{userName}</span>
+                )}
+              </h1>
+              <p className="mt-2 text-xs sm:text-sm text-gray-600 dark:text-gray-400 max-w-xl">
+                Track your productivity and watch your garden grow
+              </p>
+            </div>
+            
+            {/* Quick Stats Badges */}
+            <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
+              <Badge className="bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-700 px-2 sm:px-3 py-1 sm:py-1.5 text-xs font-medium">
+                <Icons.seedling className="w-3 h-3 mr-1 sm:mr-1.5" />
+                <span className="hidden sm:inline">{todayTasks} Tasks Today</span>
+                <span className="sm:hidden">{todayTasks}</span>
+              </Badge>
+              <Badge className="bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-700 px-2 sm:px-3 py-1 sm:py-1.5 text-xs font-medium">
+                <Icons.timer className="w-3 h-3 mr-1 sm:mr-1.5" />
+                <span className="hidden sm:inline">{todayPomodoros} Sessions</span>
+                <span className="sm:hidden">{todayPomodoros}</span>
+              </Badge>
+              {stats.streak > 0 && (
+                <Badge className="bg-orange-50 dark:bg-orange-900/20 text-orange-700 dark:text-orange-300 border border-orange-200 dark:border-orange-700 px-2 sm:px-3 py-1 sm:py-1.5 text-xs font-medium">
+                  <span className="hidden sm:inline">🔥 {stats.streak} Day Streak</span>
+                  <span className="sm:hidden">🔥 {stats.streak}</span>
+                </Badge>
+              )}
+            </div>
+          </div>
+
+          {/* Time Widget */}
+          <div className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm px-4 sm:px-5 py-3 sm:py-4 rounded-xl shadow-sm border border-gray-200/50 dark:border-slate-700/50 w-full sm:w-auto">
+            <div className="flex items-center space-x-2 sm:space-x-3">
+              <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl flex items-center justify-center shadow-md flex-shrink-0">
+                <Icons.sun className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
+              </div>
+              <div className="min-w-0">
+                <p className="text-xs font-medium text-gray-600 dark:text-gray-400 uppercase tracking-wide truncate">
+                  {currentDate.toLocaleDateString("en-US", {
+                    weekday: "long",
+                    month: "short",
+                    day: "numeric",
+                  })}
+                </p>
+                <p className="text-base sm:text-lg font-bold text-gray-900 dark:text-gray-100">
+                  {currentDate.toLocaleTimeString("en-US", {
+                    hour: "2-digit",
+                    minute: "2-digit",
+                  })}
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Main Content */}
+      <div className="px-4 sm:px-6 lg:px-8 py-4 sm:py-6 space-y-4 sm:space-y-6 overflow-y-auto">
+        {/* Motivational Quote */}
+        <MotivationalQuote />
+
+        {/* Quick Stats */}
+        <QuickStats />
+
+        {/* Weekly Growth Journey */}
+        <GardenTimeline />
+
+        {/* Main Content Grid */}
+        <div className="grid grid-cols-1 xl:grid-cols-3 gap-4 sm:gap-6">
+          {/* Left Column */}
+          <div className="xl:col-span-2 space-y-4 sm:space-y-6">
+            <TaskCalendar />
+            <RecentActivity />
+          </div>
+
+          {/* Right Column */}
+          <div className="space-y-4 sm:space-y-6">
+            <PomodoroTimer />
+            <TaskList />
+          </div>
+        </div>
+      </div>
+
+      {/* Quick Action Menu */}
+      <div className="fixed bottom-4 right-4 sm:bottom-6 sm:right-6 z-50 quick-actions-menu">
+        <div className="relative">
+          {/* Main Toggle Button */}
+          <button 
+            onClick={() => setIsQuickActionsOpen(!isQuickActionsOpen)}
+            className={`w-12 h-12 sm:w-14 sm:h-14 bg-gradient-to-br from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 flex items-center justify-center active:scale-95 touch-manipulation ${
+              isQuickActionsOpen ? 'rotate-45' : ''
+            }`}
+          >
+            <Icons.plus className="w-5 h-5 sm:w-6 sm:h-6 text-white transition-transform duration-200" />
+          </button>
+
+          {/* Desktop: Hover tooltip */}
+          <div className="absolute bottom-full right-0 mb-2 sm:mb-3 opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none hidden sm:block">
+            <div className="bg-slate-900 text-white text-xs px-3 py-1.5 rounded-lg shadow-lg whitespace-nowrap">
+              Quick Actions
+            </div>
+          </div>
+
+          {/* Desktop: Hover actions */}
+          <div className="absolute bottom-14 sm:bottom-16 right-0 opacity-0 group-hover:opacity-100 transition-all duration-200 transform translate-y-2 group-hover:translate-y-0 pointer-events-auto hidden sm:block">
+            <div className="flex flex-col space-y-2">
+              <button
+                onClick={() => (window.location.href = "/dashboard/tasks")}
+                className="w-12 h-12 bg-green-500 hover:bg-green-600 rounded-xl shadow-md hover:shadow-lg transition-all duration-200 flex items-center justify-center hover:scale-110 active:scale-95 touch-manipulation"
+                title="Add Task"
+              >
+                <Icons.leaf className="w-5 h-5 text-white" />
+              </button>
+              <button
+                onClick={() => (window.location.href = "/dashboard/pomodoro")}
+                className="w-12 h-12 bg-orange-500 hover:bg-orange-600 rounded-xl shadow-md hover:shadow-lg transition-all duration-200 flex items-center justify-center hover:scale-110 active:scale-95 touch-manipulation"
+                title="Start Focus Session"
+              >
+                <Icons.timer className="w-5 h-5 text-white" />
+              </button>
+              <button
+                onClick={() => (window.location.href = "/dashboard/calendar")}
+                className="w-12 h-12 bg-purple-500 hover:bg-purple-600 rounded-xl shadow-md hover:shadow-lg transition-all duration-200 flex items-center justify-center hover:scale-110 active:scale-95 touch-manipulation"
+                title="Schedule Task"
+              >
+                <Icons.calendar className="w-5 h-5 text-white" />
+              </button>
+            </div>
+          </div>
+
+          {/* Mobile: Toggleable action buttons */}
+          <div className={`absolute bottom-14 right-0 sm:hidden transition-all duration-300 ${
+            isQuickActionsOpen 
+              ? 'opacity-100 translate-y-0 pointer-events-auto' 
+              : 'opacity-0 translate-y-4 pointer-events-none'
+          }`}>
+            <div className="flex flex-col space-y-2">
+              <button
+                onClick={() => {
+                  setIsQuickActionsOpen(false)
+                  window.location.href = "/dashboard/tasks"
+                }}
+                className="w-12 h-12 bg-green-500 hover:bg-green-600 rounded-xl shadow-md transition-all duration-200 flex items-center justify-center active:scale-95 touch-manipulation"
+                title="Add Task"
+              >
+                <Icons.leaf className="w-5 h-5 text-white" />
+              </button>
+              <button
+                onClick={() => {
+                  setIsQuickActionsOpen(false)
+                  window.location.href = "/dashboard/pomodoro"
+                }}
+                className="w-12 h-12 bg-orange-500 hover:bg-orange-600 rounded-xl shadow-md transition-all duration-200 flex items-center justify-center active:scale-95 touch-manipulation"
+                title="Start Focus Session"
+              >
+                <Icons.timer className="w-5 h-5 text-white" />
+              </button>
+              <button
+                onClick={() => {
+                  setIsQuickActionsOpen(false)
+                  window.location.href = "/dashboard/calendar"
+                }}
+                className="w-12 h-12 bg-purple-500 hover:bg-purple-600 rounded-xl shadow-md transition-all duration-200 flex items-center justify-center active:scale-95 touch-manipulation"
+                title="Schedule Task"
+              >
+                <Icons.calendar className="w-5 h-5 text-white" />
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
